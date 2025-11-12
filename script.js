@@ -26,33 +26,56 @@ const chatbotMessages = document.getElementById('chatbotMessages');
 
 // Store conversation history for OpenAI API
 const conversationHistory = [
-  { role: 'system', content: 'You are a helpful assistant.' }
+  {
+    role: 'system',
+    content: `You are WayChat, Waymark’s friendly creative assistant.
+
+Waymark is a video ad creation platform that helps people turn ideas, products, or messages into high-quality, ready-to-run videos. The platform is used by small businesses, agencies, and marketers to create broadcast-   ads with minimal friction.
+
+Your job is to help users shape raw input — whether it’s a business name, a tagline, a product, a vibe, or a rough idea — into a short-form video concept.
+
+Your responses may include suggested video structures, voiceover lines, tone and visual direction, music suggestions, and clarifying follow-up questions.
+
+If the user's input is unclear, ask 1–2 short questions to help sharpen the direction before offering creative suggestions.
+
+Only respond to questions related to Waymark, its tools, its platform, or the creative process of making short-form video ads. If a question is unrelated, politely explain that you're focused on helping users create video ads with Waymark.
+
+Keep your replies concise, collaborative, and focused on helping users express their message clearly. Always align with modern marketing best practices — and stay supportive and friendly.`
+  }
 ];
 
 // Helper: Add a message to the chat window and update history
 function addMessage(text, sender = 'user') {
   const msgDiv = document.createElement('div');
-  msgDiv.textContent = text;
-  msgDiv.style.margin = '8px 0';
-  msgDiv.style.padding = '8px 12px';
-  msgDiv.style.borderRadius = '8px';
-  msgDiv.style.maxWidth = '85%';
-  msgDiv.style.wordBreak = 'break-word';
-  if (sender === 'user') {
+  // Format assistant messages with line breaks and spacing between sections
+  if (sender === 'assistant') {
+    // Replace double newlines or section headers with <br><br> for spacing
+    let formatted = text
+      .replace(/\n{2,}/g, '<br><br>')
+      .replace(/(Script:|Voiceover:|Tone:|CTA:|Music:|Visuals:|Direction:|Structure:|\bStep \d+:)/g, '<strong>$1</strong>');
+    msgDiv.innerHTML = formatted;
+    msgDiv.style.background = '#fff';
+    msgDiv.style.color = '#23232d';
+    msgDiv.style.alignSelf = 'flex-start';
+    msgDiv.style.marginRight = 'auto';
+    msgDiv.style.marginTop = '14px';
+    msgDiv.style.marginBottom = '14px';
+    // Add to conversation history
+    conversationHistory.push({ role: 'assistant', content: text });
+  } else {
+    msgDiv.textContent = text;
     msgDiv.style.background = '#3bb0ff';
     msgDiv.style.color = '#fff';
     msgDiv.style.alignSelf = 'flex-end';
     msgDiv.style.marginLeft = 'auto';
     // Add to conversation history
     conversationHistory.push({ role: 'user', content: text });
-  } else {
-    msgDiv.style.background = '#fff';
-    msgDiv.style.color = '#23232d';
-    msgDiv.style.alignSelf = 'flex-start';
-    msgDiv.style.marginRight = 'auto';
-    // Add to conversation history
-    conversationHistory.push({ role: 'assistant', content: text });
   }
+  msgDiv.style.margin = '8px 0';
+  msgDiv.style.padding = '8px 12px';
+  msgDiv.style.borderRadius = '8px';
+  msgDiv.style.maxWidth = '85%';
+  msgDiv.style.wordBreak = 'break-word';
   chatbotMessages.appendChild(msgDiv);
   chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 }
@@ -84,7 +107,8 @@ async function sendMessage() {
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: conversationHistory,
-        max_tokens: 200
+        temperature: 0.8, // More creative responses
+        max_completion_tokens: 300 // Short, focused replies
       })
     });
     const data = await response.json();

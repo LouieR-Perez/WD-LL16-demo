@@ -316,6 +316,14 @@ h1 {
   margin-bottom: 8px;
 }
 
+/* Add spacing between sections in assistant messages */
+.chatbot-messages div strong {
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 2px;
+  font-weight: 700;
+}
+
 /* Make sure the Material Icons font is used and sized correctly */
 .material-icons-outlined.chatbot-icon {
   font-family: 'Material Icons Outlined', 'Material Icons', Arial, sans-serif !important;
