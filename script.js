@@ -47,35 +47,48 @@ Keep your replies concise, collaborative, and focused on helping users express t
 // Helper: Add a message to the chat window and update history
 function addMessage(text, sender = 'user') {
   const msgDiv = document.createElement('div');
-  // Format assistant messages with line breaks and spacing between sections
   if (sender === 'assistant') {
-    // Replace double newlines or section headers with <br><br> for spacing
-    let formatted = text
-      .replace(/\n{2,}/g, '<br><br>')
-      .replace(/(Script:|Voiceover:|Tone:|CTA:|Music:|Visuals:|Direction:|Structure:|\bStep \d+:)/g, '<strong>$1</strong>');
-    msgDiv.innerHTML = formatted;
-    msgDiv.style.background = '#fff';
-    msgDiv.style.color = '#23232d';
-    msgDiv.style.alignSelf = 'flex-start';
-    msgDiv.style.marginRight = 'auto';
-    msgDiv.style.marginTop = '14px';
-    msgDiv.style.marginBottom = '14px';
-    // Add to conversation history
+    // Format assistant message for clarity and natural reading
+    // 1. Split into paragraphs by double newlines
+    let paragraphs = text.split(/\n{2,}/g);
+    let html = '';
+    for (let para of paragraphs) {
+      // Section headers (Structure:, Tone:, etc.)
+      para = para.replace(/^(Structure:|Script:|Voiceover:|Tone:|CTA:|Music:|Visuals:|Direction:|Step \d+:|[A-Za-z ]+ and [A-Za-z ]+:)$/gm, '<span class="chat-section">$1</span>');
+      // Numbered lists: 1. ... 2. ...
+      para = para.replace(/\n?(\d+\.) /g, '<br><span class="chat-number">$1</span> ');
+      // Group bullet points into <ul> with multiline support
+      if (/\n- /.test(para)) {
+        // Find all bullet blocks
+        para = para.replace(/(?:\n- [^\n]+(?:\n(?!- |\d+\.|[A-Za-z ]+ and [A-Za-z ]+:|Structure:|Script:|Voiceover:|Tone:|CTA:|Music:|Visuals:|Direction:|Step \d+:).*)*)/g, function(match) {
+          // Remove leading newlines
+          let lines = match.replace(/^\n- /, '').split(/\n/);
+          // Join lines for this bullet
+          return '<li>' + lines.map(line => {
+            // Inline sub-labels (Visual:, Voiceover:, etc.)
+            return line.replace(/(Visual:|Voiceover:|On-screen text:|CTA:|Tone:|Music:|Direction:)/g, '<span class="chat-sublabel">$1</span>');
+          }).join('<br>') + '</li>';
+        });
+        // Wrap all <li> in <ul>
+        para = para.replace(/(<li>[\s\S]*<\/li>)/g, '<ul>$1</ul>');
+      } else {
+        // Inline sub-labels (Visual:, Voiceover:, etc.)
+        para = para.replace(/(Visual:|Voiceover:|On-screen text:|CTA:|Tone:|Music:|Direction:)/g, '<span class="chat-sublabel">$1</span>');
+      }
+      // Bold markdown-style **section headers**
+      para = para.replace(/\*\*([^\*\n]+)\*\*/g, '<strong>$1</strong>');
+      // Single newlines to <br>
+      para = para.replace(/([^>])\n/g, '$1<br>');
+      html += `<div class="chat-paragraph">${para}</div>`;
+    }
+    msgDiv.innerHTML = html;
+    msgDiv.className = 'chat-bubble assistant-bubble';
     conversationHistory.push({ role: 'assistant', content: text });
   } else {
     msgDiv.textContent = text;
-    msgDiv.style.background = '#3bb0ff';
-    msgDiv.style.color = '#fff';
-    msgDiv.style.alignSelf = 'flex-end';
-    msgDiv.style.marginLeft = 'auto';
-    // Add to conversation history
+    msgDiv.className = 'chat-bubble user-bubble';
     conversationHistory.push({ role: 'user', content: text });
   }
-  msgDiv.style.margin = '8px 0';
-  msgDiv.style.padding = '8px 12px';
-  msgDiv.style.borderRadius = '8px';
-  msgDiv.style.maxWidth = '85%';
-  msgDiv.style.wordBreak = 'break-word';
   chatbotMessages.appendChild(msgDiv);
   chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 }
@@ -87,12 +100,10 @@ async function sendMessage() {
   addMessage(userInput, 'user');
   chatbotInput.value = '';
 
-  // Show a loading message
+  // Show a loading animation
   const loadingDiv = document.createElement('div');
-  loadingDiv.textContent = 'Thinking...';
-  loadingDiv.style.color = '#aaa';
-  loadingDiv.style.margin = '8px 0';
-  loadingDiv.style.alignSelf = 'flex-start';
+  loadingDiv.className = 'chat-bubble assistant-bubble thinking-bubble';
+  loadingDiv.innerHTML = '<span class="thinking-dot"></span><span class="thinking-dot"></span><span class="thinking-dot"></span>';
   chatbotMessages.appendChild(loadingDiv);
   chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 
@@ -124,10 +135,9 @@ async function sendMessage() {
   }
 }
 
-// Send on button click
+// Send on button click and Enter key
 if (chatbotSendBtn && chatbotInput) {
   chatbotSendBtn.addEventListener('click', sendMessage);
-  // Send on Enter key
   chatbotInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
